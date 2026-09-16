@@ -1,4 +1,4 @@
-# New Orleans surveillance mapping
+# surveillance mapping
 
 A web application to map surveillance cameras in New Orleans with three user types:
 - **Read-only viewers**: Browse the camera map
@@ -32,6 +32,22 @@ There are two ways to develop locally:
 ### Prerequisites
 
 #### System Dependencies
+
+**MACOS:**
+
+**Homebrew:**
+```bash
+#Required
+brew install podman podman-compose
+
+# For local development (GeoDjango dependencies)
+brew install gdal geos proj
+
+# UV package manager
+brew install uv
+```
+
+**LINUX:**
 
 **Fedora:**
 ```bash

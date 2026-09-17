@@ -25,3 +25,7 @@ EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 # Disable whitenoise compression in development
 STATICFILES_STORAGE = "django.contrib.staticfiles.storage.StaticFilesStorage"
+
+# DONT PUSH, mac library path
+GDAL_LIBRARY_PATH = "/opt/homebrew/opt/gdal/lib/libgdal.dylib"
+GEOS_LIBRARY_PATH = "/opt/homebrew/opt/geos/lib/libgeos_c.dylib"

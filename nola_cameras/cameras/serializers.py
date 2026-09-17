@@ -23,9 +23,12 @@ class CameraGeoSerializer(GeoFeatureModelSerializer):
             "id",
             "cross_road",
             "street_address",
+            "building",
+            "floor",
+            "nearby_room",
+            "reporter_notes",
             "facial_recognition",
             "associated_shop",
-            "camera_type",
             "photos",
         ]
 

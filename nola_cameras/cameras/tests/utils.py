@@ -25,6 +25,19 @@ def make_image_file(name="test.jpg"):
     return SimpleUploadedFile(name, buf.getvalue(), content_type="image/jpeg")
 
 
+def make_image_file_with_exif(name="test.jpg"):
+    """Return a JPEG carrying EXIF tags (incl. a GPS IFD), for testing metadata stripping."""
+    from PIL import Image
+    buf = io.BytesIO()
+    img = Image.new("RGB", (4, 4), color="red")
+    exif = img.getexif()
+    exif[271] = "TestCameraCorp"  # Make
+    exif[272] = "TestPhoneModel"  # Model
+    exif[34853] = {1: "N", 2: (42.0, 0.0, 0.0), 3: "W", 4: (71.0, 0.0, 0.0)}  # GPSInfo IFD
+    img.save(buf, format="JPEG", exif=exif.tobytes())
+    return SimpleUploadedFile(name, buf.getvalue(), content_type="image/jpeg")
+
+
 def make_camera_image(camera, **kwargs):
     """Return a saved CameraImage with sensible defaults."""
     defaults = {

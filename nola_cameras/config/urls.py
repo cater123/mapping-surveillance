@@ -1,5 +1,5 @@
 """
-URL configuration for NOLA Camera Mapping project.
+URL configuration for MIT Camera Mapping project.
 """
 
 from django.conf import settings

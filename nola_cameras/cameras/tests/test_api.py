@@ -56,12 +56,12 @@ class CameraListAPITests(TestCase):
 
 
     def test_type_param_ignored(self):
-        make_camera(camera_type=Camera.CameraType.PROJECT_NOLA, cross_road="NOLA Camera")
-        make_camera(camera_type=Camera.CameraType.NOPD, cross_road="NOPD Camera")
+        make_camera(cross_road="Camera A")
+        make_camera(cross_road="Camera B")
         response = self.client.get("/api/cameras/?type=project_nola")
         cross_roads = [f["properties"]["cross_road"] for f in response.data["features"]]
-        self.assertIn("NOLA Camera", cross_roads)
-        self.assertIn("NOPD Camera", cross_roads)
+        self.assertIn("Camera A", cross_roads)
+        self.assertIn("Camera B", cross_roads)
 
     def test_list_filter_no_photos(self):
         camera_with_photo = make_camera(cross_road="Camera With Photo")

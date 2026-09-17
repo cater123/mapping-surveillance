@@ -1,34 +1,58 @@
 """
-Camera model for New Orleans surveillance camera mapping.
+Camera model for MIT surveillance camera mapping.
 """
 
 import uuid
+from io import BytesIO
 from pathlib import Path
 
 from ckeditor.fields import RichTextField
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
-from django.core.exceptions import ValidationError
+from django.core.files.base import ContentFile
 from django.utils import timezone
+from PIL import Image, ImageOps
+
+
+def _strip_image_metadata(image_file):
+    """
+    Re-encode an uploaded image so it carries none of its original metadata —
+    notably EXIF GPS geotags, camera/device identifiers, and timestamps that
+    could deanonymize whoever submitted the photo.
+    """
+    image_file.seek(0)
+    original = Image.open(image_file)
+    original = ImageOps.exif_transpose(original)  # bake in visual orientation before dropping EXIF
+
+    fmt = (original.format or "JPEG").upper()
+    if fmt not in ("JPEG", "PNG", "WEBP"):
+        fmt = "JPEG"
+    mode = original.mode
+    if fmt == "JPEG" and mode not in ("RGB", "L"):
+        mode = "RGB"
+
+    # A brand-new Image carries no .info dict, so copying only pixel data
+    # (not the source image object) drops EXIF/ICC/XMP entirely.
+    clean = Image.new(mode, original.size)
+    clean.putdata(list(original.convert(mode).getdata()))
+
+    buffer = BytesIO()
+    save_kwargs = {"quality": 90} if fmt == "JPEG" else {}
+    clean.save(buffer, format=fmt, **save_kwargs)
+    buffer.seek(0)
+
+    return ContentFile(buffer.read(), name=Path(image_file.name).name)
 
 
 class Camera(models.Model):
     """
-    Represents a surveillance camera in New Orleans.
+    Represents a surveillance camera at MIT.
     """
 
     class Status(models.TextChoices):
         VETTED = "vetted", "Vetted"
         PENDING = "pending", "Pending Review"
         REJECTED = "rejected", "Rejected"
-
-    class CameraType(models.TextChoices):
-        PROJECT_NOLA = "project_nola", "Project NOLA"
-        NOPD         = "nopd",         "NOPD"
-        PRIVATE      = "private",      "Private"
-        TRAFFIC      = "traffic",      "Traffic"
-        ALPR         = "alpr",         "ALPR"
-        UNKNOWN      = "unknown",      "Unknown"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     osm_id = models.BigIntegerField(
@@ -53,6 +77,25 @@ class Camera(models.Model):
         help_text="Geographic coordinates (longitude, latitude)",
         srid=4326,
     )
+    building = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Building name or number, if known, e.g. 'Building 32 (Stata Center)'",
+    )
+    floor = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="Floor or level, if indoors, e.g. '3rd floor'",
+    )
+    nearby_room = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Nearby room, unit, or landmark, if known",
+    )
+    reporter_notes = models.TextField(
+        blank=True,
+        help_text="Additional notes submitted by the reporter",
+    )
 
     # Camera details
     facial_recognition = models.BooleanField(
@@ -65,13 +108,6 @@ class Camera(models.Model):
         help_text="Business name if this is a private camera",
     )
 
-    # Camera type / operator
-    camera_type = models.CharField(
-        max_length=20,
-        choices=CameraType.choices,
-        default=CameraType.UNKNOWN,
-        db_index=True,
-    )
     manufacturer = models.CharField(
         max_length=255,
         blank=True,
@@ -122,15 +158,8 @@ class Camera(models.Model):
         verbose_name = "Camera"
         verbose_name_plural = "Cameras"
 
-    def clean(self):
-        if not any([self.cross_road, self.street_address, self.associated_shop]):
-            raise ValidationError(
-                "At least one of cross_road, street_address, or associated_shop must be provided."
-            )
-
     def __str__(self):
-        label = self.cross_road or self.street_address or self.associated_shop
-        return f"{label} ({self.get_status_display()})"
+        return f"Camera {self.id} ({self.get_status_display()})"
 
     @property
     def latitude(self):
@@ -169,9 +198,8 @@ class CameraImage(models.Model):
         REJECTED = "rejected", "Rejected"
 
     class PhotoType(models.TextChoices):
-        SURROUNDING       = "surrounding",       "Surrounding"
-        CLOSE_UP          = "close_up",          "Close Up"
-        PROJECT_NOLA_SIGN = "project_nola_sign", "Project NOLA Sign"
+        SURROUNDING = "surrounding", "Surrounding"
+        CLOSE_UP    = "close_up",    "Close Up"
 
     id          = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     camera      = models.ForeignKey(Camera, on_delete=models.CASCADE, related_name="images")
@@ -193,6 +221,14 @@ class CameraImage(models.Model):
 
     def __str__(self):
         return f"{self.get_photo_type_display()} — {self.camera} ({self.get_status_display()})"
+
+    def save(self, *args, **kwargs):
+        # Only re-encode a newly assigned file (not, e.g., a FieldFile already
+        # pointing at existing storage, which tests/fixtures may pass as a
+        # plain path string).
+        if self.image and not self.image._committed:
+            self.image = _strip_image_metadata(self.image)
+        super().save(*args, **kwargs)
 
     def approve(self, user):
         self.status = self.Status.APPROVED

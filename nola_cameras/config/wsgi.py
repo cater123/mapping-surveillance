@@ -1,5 +1,5 @@
 """
-WSGI config for  Camera Mapping project.
+WSGI config for MIT Camera Mapping project.
 """
 
 import os

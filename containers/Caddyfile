@@ -25,13 +25,23 @@
         }
     }
 
-    # Logging — JSON format to file so GoatCounter can import from it
+    # Logging — JSON format to file so GoatCounter can import from it.
+    # IP fields are stripped before they ever reach disk: reporters submitting
+    # camera locations should not have their own IP address retained anywhere.
     log {
         output file /var/log/caddy/access.log {
             roll_size 100mb
             roll_keep 5
         }
-        format json
+        format filter {
+            wrap json
+            fields {
+                request>remote_ip delete
+                request>client_ip delete
+                request>headers>X-Forwarded-For delete
+                request>headers>X-Real-Ip delete
+            }
+        }
     }
 }
 

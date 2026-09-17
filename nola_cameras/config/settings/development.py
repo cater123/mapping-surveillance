@@ -1,5 +1,5 @@
 """
-Development settings for NOLA Camera Mapping project.
+Development settings for MIT Camera Mapping project.
 """
 
 from .base import *  # noqa: F401, F403

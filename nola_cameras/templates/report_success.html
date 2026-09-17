@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Report Submitted - New Orleans surveillance map{% endblock %}
+{% block title %}Report Submitted - MIT surveillance map{% endblock %}
 
 {% block content %}
 <div class="max-w-lg mx-auto px-4 py-16 text-center">
@@ -19,13 +19,13 @@
 
     <div class="space-y-4">
         <a href="{% url 'map' %}"
-           class="inline-block bg-nola-purple text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-700 transition">
+           class="inline-block bg-mit-red text-white px-6 py-3 rounded-lg font-medium hover:bg-mit-red-dark transition">
             View Camera Map
         </a>
 
         <div>
             <a href="{% url 'report' %}"
-               class="text-nola-purple hover:text-purple-700 font-medium">
+               class="text-mit-red hover:text-mit-red-dark font-medium">
                 Report Another Camera
             </a>
         </div>

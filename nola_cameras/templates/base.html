@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}New Orleans surveillance map{% endblock %}</title>
+    <title>{% block title %}MIT surveillance map{% endblock %}</title>
 
     <!-- Open Graph / Social media preview -->
     <meta property="og:type" content="website">
@@ -25,8 +25,8 @@
       {% endif %}
     {% else %}
       <meta property="og:url" content="{{ request.scheme }}://{{ request.get_host }}{{ request.path }}">
-      <meta property="og:title" content="New Orleans map of surveillance">
-      <meta property="og:description" content="An interactive map of surveillance cameras in New Orleans.">
+      <meta property="og:title" content="MIT map of surveillance">
+      <meta property="og:description" content="An interactive map of surveillance cameras at MIT.">
       <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}/static/images/og-preview.jpg">
       <meta property="og:image:type" content="image/jpeg">
       <meta property="og:image:width" content="1200">
@@ -42,9 +42,11 @@
             theme: {
                 extend: {
                     colors: {
-                        nola: {
-                            purple: '#6b46c1',
-                            gold: '#d69e2e',
+                        mit: {
+                            red: '#A31F34',
+                            'red-dark': '#7d1829',
+                            'red-light': '#fbeaec',
+                            gray: '#8a8b8c',
                         }
                     }
                 }
@@ -69,20 +71,20 @@
 
         /* Form input styles */
         .form-input {
-            @apply w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-nola-purple focus:border-transparent outline-none transition;
+            @apply w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-mit-red focus:border-transparent outline-none transition;
         }
 
         .form-checkbox {
-            @apply w-5 h-5 text-nola-purple border-gray-300 rounded focus:ring-nola-purple;
+            @apply w-5 h-5 text-mit-red border-gray-300 rounded focus:ring-mit-red;
         }
 
         .form-file {
-            @apply w-full text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-nola-purple file:text-white hover:file:bg-purple-700 file:cursor-pointer;
+            @apply w-full text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-mit-red file:text-white hover:file:bg-mit-red-dark file:cursor-pointer;
         }
 
         /* Camera marker icons */
         .camera-marker {
-            background-color: #6b46c1;
+            background-color: #A31F34;
             border: 2px solid white;
             border-radius: 50%;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
@@ -143,15 +145,15 @@
         <div class="max-w-7xl mx-auto px-4">
             <div class="flex justify-between items-center h-14">
                 <a href="{% url 'map' %}" class="flex items-center space-x-2">
-                    <svg class="w-6 h-6 text-nola-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-6 h-6 text-mit-red" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                     </svg>
-                    <span class="font-semibold text-lg">NOLA Camera Map</span>
+                    <span class="font-semibold text-lg">MIT Camera Map</span>
                 </a>
                 <div class="flex items-center space-x-4">
                     <a href="{% url 'report' %}"
-                       class="bg-nola-purple text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition">
+                       class="bg-mit-red text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-mit-red-dark transition">
                         Report Camera
                     </a>
                 </div>

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Report a Camera - New Orleans surveillance map{% endblock %}
+{% block title %}Report a Camera - MIT surveillance map{% endblock %}
 
 {% block extra_css %}
 <style>
@@ -12,7 +12,7 @@
     }
 
     .location-marker {
-        background-color: #6b46c1;
+        background-color: #f97316;
         border: 3px solid white;
         border-radius: 50%;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
@@ -28,21 +28,43 @@
 
     .photo-card.has-photo {
         border-style: solid;
-        border-color: #6b46c1;
+        border-color: #A31F34;
+    }
+
+    .photo-preview-grid img {
+        height: 5rem;
+        width: 5rem;
+        object-fit: cover;
+        border-radius: 0.5rem;
+    }
+
+    .report-section + .report-section {
+        border-top: 1px solid #e5e7eb;
+        margin-top: 1.25rem;
+        padding-top: 1.25rem;
+    }
+
+    .report-section-title {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #111827;
+        margin-bottom: 0.75rem;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="max-w-lg mx-auto px-4 py-6">
-    <div class="mb-6">
+    <div class="mb-5">
         <h1 class="text-xl font-bold text-gray-900 mb-1">Report a Surveillance Camera</h1>
         <p class="text-sm text-gray-600">
-            Help map surveillance cameras in New Orleans. Your submission will be reviewed before appearing on the map.
+            Help map surveillance cameras at MIT. Your submission will be reviewed before appearing on the map.
         </p>
     </div>
 
-    <form method="post" enctype="multipart/form-data" class="space-y-5" x-data="reportForm()" @submit="validateForm($event)">
+    <form method="post" enctype="multipart/form-data"
+          class="bg-white rounded-xl border border-gray-200 p-5"
+          x-data="reportForm()" @submit="validateForm($event)">
         {% csrf_token %}
 
         <!-- Honeypot field (hidden from users, catches bots) -->
@@ -50,6 +72,10 @@
             {{ form.website }}
         </div>
 
+        <!-- Location -->
+        <div class="report-section">
+            <p class="report-section-title">Location</p>
+            <div class="space-y-4">
         <!-- Location Map -->
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -63,7 +89,7 @@
                 <button type="button"
                         @click="useMyLocation()"
                         :disabled="locating"
-                        class="flex items-center gap-1 text-xs px-3 py-2 rounded-lg border border-nola-purple text-nola-purple hover:bg-purple-50 transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
+                        class="flex items-center gap-1 text-xs px-3 py-2 rounded-lg border border-mit-red text-mit-red hover:bg-mit-red-light transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
                     <svg class="w-4 h-4" :class="{ 'animate-spin': locating }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
@@ -85,56 +111,67 @@
             </p>
         </div>
 
-        <!-- Cross Road -->
+        <!-- Street Corner -->
         <div>
             <label for="id_cross_road" class="block text-sm font-medium text-gray-700 mb-2">
-                Nearest Intersection <span class="text-red-500">*</span>
+                Street Corner <span class="text-gray-400">(optional)</span>
             </label>
             <input type="text"
                    name="cross_road"
                    id="id_cross_road"
-                   required
                    class="form-input"
-                   placeholder="e.g., Canal St & Bourbon St">
+                   placeholder="e.g., Massachusetts Ave & Amherst St">
             {% if form.cross_road.errors %}
             <p class="text-xs text-red-500 mt-1">{{ form.cross_road.errors.0 }}</p>
             {% endif %}
         </div>
 
-        <!-- Street Address -->
+        <!-- Building -->
         <div>
-            <label for="id_street_address" class="block text-sm font-medium text-gray-700 mb-2">
-                Street Address <span class="text-gray-400">(optional)</span>
+            <label for="id_building" class="block text-sm font-medium text-gray-700 mb-2">
+                Building <span class="text-gray-400">(optional)</span>
             </label>
             <input type="text"
-                   name="street_address"
-                   id="id_street_address"
+                   name="building"
+                   id="id_building"
                    class="form-input"
-                   placeholder="e.g., 123 Main St">
+                   placeholder="e.g., Building 32 (Stata Center)">
         </div>
 
-
-        <!-- Associated Shop -->
+        <!-- Floor -->
         <div>
-            <label for="id_associated_shop" class="block text-sm font-medium text-gray-700 mb-2">
-                Associated Business <span class="text-gray-400">(optional)</span>
+            <label for="id_floor" class="block text-sm font-medium text-gray-700 mb-2">
+                Floor <span class="text-gray-400">(optional)</span>
             </label>
             <input type="text"
-                   name="associated_shop"
-                   id="id_associated_shop"
+                   name="floor"
+                   id="id_floor"
                    class="form-input"
-                   placeholder="e.g., Corner Store">
+                   placeholder="e.g., 3rd floor">
+        </div>
+
+        <!-- Nearby Room -->
+        <div>
+            <label for="id_nearby_room" class="block text-sm font-medium text-gray-700 mb-2">
+                Nearby Room <span class="text-gray-400">(optional)</span>
+            </label>
+            <input type="text"
+                   name="nearby_room"
+                   id="id_nearby_room"
+                   class="form-input"
+                   placeholder="e.g., Room 204, near the elevator">
+        </div>
+            </div>
         </div>
 
         <!-- Photos Section -->
-        <div>
-            <h2 class="text-sm font-semibold text-gray-800 mb-1">Photos</h2>
-            <p class="text-xs text-gray-500 mb-3">Photos 1 and 2 are required to help verify the camera.</p>
+        <div class="report-section">
+            <p class="report-section-title">Photos</p>
+            <p class="text-sm font-medium text-gray-700 mb-1">Pictures <span class="text-gray-400 font-normal">(optional)</span></p>
 
-            <!-- Photo 1: Close-up (required) -->
-            <div class="photo-card mb-3" :class="{ 'has-photo': imagePreview }">
-                <label for="id_image_close_up" class="block cursor-pointer">
-                    <template x-if="!imagePreview">
+            <div class="photo-card" :class="{ 'has-photo': imagePreviews.length }">
+                <label for="id_pictures" class="block cursor-pointer">
+                    <template x-if="!imagePreviews.length">
                         <div>
                             <svg class="w-10 h-10 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
@@ -142,130 +179,53 @@
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
                                       d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
                             </svg>
-                            <p class="text-sm font-medium text-gray-700">
-                                Photo 1 — Close-up of the camera
-                                <span class="text-red-500">*</span>
-                            </p>
-                            <p class="mt-1 text-sm text-nola-purple font-medium">Tap to add photo</p>
+                            <p class="text-sm font-medium text-gray-700">Add pictures of the camera</p>
+                            <p class="mt-1 text-sm text-mit-red font-medium">Tap to add photos</p>
                         </div>
                     </template>
-                    <template x-if="imagePreview">
+                    <template x-if="imagePreviews.length">
                         <div>
-                            <img :src="imagePreview" alt="Photo 1 preview" class="max-h-40 mx-auto rounded-lg mb-2">
-                            <p class="text-xs text-green-600 font-medium">Photo 1 captured</p>
+                            <div class="photo-preview-grid flex flex-wrap gap-2 justify-center mb-2">
+                                <template x-for="(src, index) in imagePreviews" :key="index">
+                                    <img :src="src" alt="Photo preview">
+                                </template>
+                            </div>
+                            <p class="text-xs text-green-600 font-medium" x-text="imagePreviews.length + ' photo(s) captured'"></p>
                         </div>
                     </template>
                     <input type="file"
-                           name="image_close_up"
-                           id="id_image_close_up"
+                           name="pictures"
+                           id="id_pictures"
                            accept="image/*"
+                           multiple
                            class="hidden"
-                           @change="previewImage($event, 1)">
+                           @change="previewImages($event)">
                 </label>
-                <button x-show="imagePreview"
+                <button x-show="imagePreviews.length"
                         type="button"
-                        @click="clearImage(1)"
+                        @click="clearImages()"
                         class="mt-2 text-xs text-red-500 hover:text-red-700">
-                    Retake photo
-                </button>
-            </div>
-            <p x-show="photoError1" class="text-xs text-red-500 mb-3 -mt-1">Photo 1 is required.</p>
-
-            <!-- Photo 2: Surroundings (required) -->
-            <div class="photo-card mb-3" :class="{ 'has-photo': imagePreview2 }">
-                <label for="id_image_surrounding" class="block cursor-pointer">
-                    <template x-if="!imagePreview2">
-                        <div>
-                            <svg class="w-10 h-10 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <p class="text-sm font-medium text-gray-700">
-                                Photo 2 — Camera and surroundings
-                                <span class="text-red-500">*</span>
-                            </p>
-                            <p class="mt-1 text-sm text-nola-purple font-medium">Tap to add photo</p>
-                        </div>
-                    </template>
-                    <template x-if="imagePreview2">
-                        <div>
-                            <img :src="imagePreview2" alt="Photo 2 preview" class="max-h-40 mx-auto rounded-lg mb-2">
-                            <p class="text-xs text-green-600 font-medium">Photo 2 captured</p>
-                        </div>
-                    </template>
-                    <input type="file"
-                           name="image_surrounding"
-                           id="id_image_surrounding"
-                           accept="image/*"
-                           class="hidden"
-                           @change="previewImage($event, 2)">
-                </label>
-                <button x-show="imagePreview2"
-                        type="button"
-                        @click="clearImage(2)"
-                        class="mt-2 text-xs text-red-500 hover:text-red-700">
-                    Retake photo
-                </button>
-            </div>
-            <p x-show="photoError2" class="text-xs text-red-500 mb-3 -mt-1">Photo 2 is required.</p>
-
-            <!-- Photo 3: Project Nola sign (optional) -->
-            <div class="photo-card" :class="{ 'has-photo': imagePreview3 }">
-                <label for="id_image_project_nola_sign" class="block cursor-pointer">
-                    <template x-if="!imagePreview3">
-                        <div>
-                            <svg class="w-10 h-10 mx-auto text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                      d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                      d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <p class="text-sm font-medium text-gray-700">
-                                Photo 3 — Project Nola sign
-                                <span class="text-gray-400 text-xs">(optional)</span>
-                            </p>
-                            <p class="mt-1 text-sm text-nola-purple font-medium">Tap to add photo</p>
-                        </div>
-                    </template>
-                    <template x-if="imagePreview3">
-                        <div>
-                            <img :src="imagePreview3" alt="Photo 3 preview" class="max-h-40 mx-auto rounded-lg mb-2">
-                            <p class="text-xs text-green-600 font-medium">Photo 3 captured</p>
-                        </div>
-                    </template>
-                    <input type="file"
-                           name="image_project_nola_sign"
-                           id="id_image_project_nola_sign"
-                           accept="image/*"
-                           class="hidden"
-                           @change="previewImage($event, 3)">
-                </label>
-                <button x-show="imagePreview3"
-                        type="button"
-                        @click="clearImage(3)"
-                        class="mt-2 text-xs text-red-500 hover:text-red-700">
-                    Retake photo
+                    Retake photos
                 </button>
             </div>
         </div>
 
-        <!-- Reporter Info -->
-        <div>
-            <label for="id_reported_by" class="block text-sm font-medium text-gray-700 mb-2">
-                Your Email or Name <span class="text-gray-400">(optional)</span>
+        <!-- Additional Details -->
+        <div class="report-section">
+            <p class="report-section-title">Additional Details</p>
+            <label for="id_reporter_notes" class="block text-sm font-medium text-gray-700 mb-2">
+                Extra Notes <span class="text-gray-400">(optional)</span>
             </label>
-            <input type="text"
-                   name="reported_by"
-                   id="id_reported_by"
-                   class="form-input"
-                   placeholder="e.g., john@example.com">
+            <textarea name="reporter_notes"
+                      id="id_reporter_notes"
+                      rows="6"
+                      class="form-input"
+                      placeholder="Anything else you'd like to add"></textarea>
         </div>
 
         <!-- Form Errors -->
         {% if form.non_field_errors %}
-        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4 mt-5">
             <p class="text-red-700 text-sm">{{ form.non_field_errors.0 }}</p>
         </div>
         {% endif %}
@@ -273,7 +233,7 @@
         <!-- Submit Button -->
         <div class="pt-2 pb-6">
             <button type="submit"
-                    class="w-full bg-nola-purple text-white py-4 px-6 rounded-xl font-medium text-base hover:bg-purple-700 active:bg-purple-800 transition flex items-center justify-center space-x-2">
+                    class="w-full bg-mit-red text-white py-4 px-6 rounded-xl font-medium text-base hover:bg-mit-red-dark active:bg-mit-red-dark transition flex items-center justify-center space-x-2">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
@@ -304,21 +264,18 @@ function reportForm() {
         marker: null,
         latitude: null,
         longitude: null,
-        imagePreview: null,
-        imagePreview2: null,
-        imagePreview3: null,
+        imagePreviews: [],
         locating: false,
         locationError: null,
-        photoError1: false,
-        photoError2: false,
 
         init() {
             const cfg = REPORT_MAP_CONFIG;
             this.map = L.map('location-map').setView([cfg.lat, cfg.lng], cfg.zoom);
 
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key={{ carto_api_key }}', {
                 maxZoom: 19,
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
             }).addTo(this.map);
 
             if (cfg.pinned) {
@@ -374,62 +331,28 @@ function reportForm() {
             );
         },
 
-        previewImage(event, slot) {
-            const file = event.target.files[0];
-            if (file) {
+        previewImages(event) {
+            this.imagePreviews = [];
+            Array.from(event.target.files).forEach((file) => {
                 const reader = new FileReader();
                 reader.onload = (e) => {
-                    if (slot === 2) {
-                        this.imagePreview2 = e.target.result;
-                        this.photoError2 = false;
-                    } else if (slot === 3) {
-                        this.imagePreview3 = e.target.result;
-                    } else {
-                        this.imagePreview = e.target.result;
-                        this.photoError1 = false;
-                    }
+                    this.imagePreviews.push(e.target.result);
                 };
                 reader.readAsDataURL(file);
-            }
+            });
         },
 
-        clearImage(slot) {
-            if (slot === 2) {
-                this.imagePreview2 = null;
-                document.getElementById('id_image_surrounding').value = '';
-            } else if (slot === 3) {
-                this.imagePreview3 = null;
-                document.getElementById('id_image_project_nola_sign').value = '';
-            } else {
-                this.imagePreview = null;
-                document.getElementById('id_image_close_up').value = '';
-            }
+        clearImages() {
+            this.imagePreviews = [];
+            document.getElementById('id_pictures').value = '';
         },
 
         validateForm(event) {
-            let valid = true;
-
             if (!this.latitude || !this.longitude) {
                 event.preventDefault();
                 alert('Please tap the map to set the camera location.');
                 return false;
             }
-
-            if (!this.imagePreview) {
-                this.photoError1 = true;
-                valid = false;
-            }
-
-            if (!this.imagePreview2) {
-                this.photoError2 = true;
-                valid = false;
-            }
-
-            if (!valid) {
-                event.preventDefault();
-                return false;
-            }
-
             return true;
         }
     };

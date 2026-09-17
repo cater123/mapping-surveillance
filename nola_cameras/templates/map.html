@@ -1,20 +1,95 @@
 {% extends "base.html" %}
-{% load static %}
 
-{% block title %}New Orleans surveillance map{% endblock %}
+{% block title %}MIT surveillance map{% endblock %}
 
 {% block extra_css %}
 <style>
     #map {
-        height: calc(100vh - 56px);
+        height: 100vh;
         width: 100%;
+    }
+
+    /* Floating "about" button — stacked above the add-camera button */
+    .about-btn {
+        position: absolute;
+        bottom: 92px;
+        right: 16px;
+        z-index: 1000;
+        width: 44px;
+        height: 44px;
+        background: white;
+        border-radius: 9999px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: none;
+    }
+
+    .about-btn:hover {
+        background: #f3f4f6;
+    }
+
+    /* Floating top-right filter toggle */
+    .filter-toggle-btn {
+        position: absolute;
+        top: 16px;
+        right: 16px;
+        z-index: 1000;
+        width: 44px;
+        height: 44px;
+        background: white;
+        border-radius: 9999px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: none;
+    }
+
+    .filter-toggle-btn:hover {
+        background: #f3f4f6;
+    }
+
+    /* Floating bottom-right "add camera" button */
+    .add-camera-btn {
+        position: absolute;
+        bottom: 24px;
+        right: 16px;
+        z-index: 1000;
+        width: 56px;
+        height: 56px;
+        background: #A31F34;
+        color: white;
+        border-radius: 9999px;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        border: none;
+        transition: background 0.15s;
+    }
+
+    .add-camera-btn:hover {
+        background: #7d1829;
+    }
+
+    .add-camera-btn.cancel-mode {
+        background: #6b7280;
+    }
+
+    .add-camera-btn.cancel-mode:hover {
+        background: #4b5563;
     }
 
     /* Filter panel */
     .filter-panel {
         position: absolute;
-        top: 70px;
-        right: 10px;
+        top: 68px;
+        right: 16px;
         z-index: 1000;
         background: white;
         border-radius: 8px;
@@ -23,16 +98,16 @@
         min-width: 200px;
     }
 
-    /* Location button */
+    /* Location button — sits beside the filter toggle at the top */
     .locate-btn {
         position: absolute;
-        bottom: 100px;
-        right: 10px;
+        top: 16px;
+        right: 68px;
         z-index: 1000;
-        width: 40px;
-        height: 40px;
+        width: 44px;
+        height: 44px;
         background: white;
-        border-radius: 8px;
+        border-radius: 9999px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.15);
         display: flex;
         align-items: center;
@@ -49,14 +124,14 @@
     @media (min-width: 768px) {
         .camera-detail-panel {
             position: absolute;
-            top: 70px;
-            left: 10px;
+            top: 16px;
+            left: 72px;
             z-index: 1000;
             background: white;
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.15);
             width: 320px;
-            max-height: calc(100vh - 140px);
+            max-height: calc(100vh - 32px);
             overflow-y: auto;
         }
     }
@@ -103,64 +178,16 @@
     #map.pick-mode,
     #map.pick-mode .leaflet-marker-icon,
     #map.pick-mode .leaflet-interactive { cursor: crosshair !important; }
-
-    /* Business name label (permanent tooltip, shown when has-shop filter is active) */
-    .business-label {
-        background: white;
-        border: 1px solid #d1d5db;
-        border-radius: 4px;
-        padding: 2px 7px;
-        font-size: 11px;
-        font-weight: 500;
-        color: #374151;
-        white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0,0,0,.12);
-    }
-    .leaflet-tooltip.business-label::before { display: none; }
 </style>
 {% endblock %}
 
 {% block body %}
-<!-- Navigation (same as base but with filters) -->
-<nav class="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-[1001]" x-data>
-    <div class="max-w-7xl mx-auto px-4">
-        <div class="flex justify-between items-center h-14">
-            <button @click="$store.infoOverlay.open = true" class="flex items-center" title="About & Announcements">
-                <img src="{% static 'images/eye-on-surveillance.png' %}" alt="Eye on Surveillance" class="h-9 w-auto">
-            </button>
-            <div class="flex items-center space-x-2 sm:space-x-4">
-                <button id="filter-toggle"
-                        class="flex items-center space-x-1 px-3 py-2 text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-100">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                              d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
-                    </svg>
-                    <span class="hidden sm:inline text-sm">Filters</span>
-                </button>
-                <template x-if="!$store.viewport.pickMode">
-                    <button @click="$store.viewport.triggerPickMode = true"
-                            class="bg-nola-purple text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition">
-                        <span class="hidden sm:inline">Report Camera</span>
-                        <span class="sm:hidden">Report</span>
-                    </button>
-                </template>
-                <template x-if="$store.viewport.pickMode">
-                    <button @click="$store.viewport.triggerExitPickMode = true"
-                            class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition">
-                        Cancel
-                    </button>
-                </template>
-            </div>
-        </div>
-    </div>
-</nav>
-
-<!-- Map Container -->
-<div x-data="cameraMap()" x-init="init()" class="relative" style="margin-top: 56px;">
+<!-- Map Container (fills the whole screen; nav is replaced by floating controls) -->
+<div x-data="cameraMap()" x-init="init()" class="relative">
     <!-- Loading Overlay -->
     <div x-show="loading" class="loading-overlay">
         <div class="flex flex-col items-center">
-            <svg class="animate-spin h-8 w-8 text-nola-purple mb-2" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-8 w-8 text-mit-red mb-2" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -180,19 +207,51 @@
     <div x-show="pickMode && $store.viewport.pinnedLat !== null"
          x-transition
          style="display: none;"
-         class="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1002] bg-nola-purple text-white rounded-xl shadow-lg px-5 py-3 flex items-center gap-3">
-        <span class="text-sm font-medium">📍 Location pinned</span>
+         class="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1002] bg-white rounded-xl shadow-lg px-4 py-3 flex items-center gap-3">
+        <svg class="w-4 h-4 text-mit-red flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span class="text-sm font-medium text-gray-800">Location set</span>
         <button @click="continueToReport()"
-                class="bg-white text-nola-purple px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-purple-50 transition">
-            Continue →
+                class="bg-mit-red text-white px-4 py-1.5 rounded-lg text-sm font-semibold hover:bg-mit-red-dark transition">
+            Continue
         </button>
-        <button @click="exitPickMode()" class="text-purple-300 hover:text-white text-xs underline">
+        <button @click="exitPickMode()" class="text-gray-400 hover:text-gray-600 text-xs">
             Cancel
         </button>
     </div>
 
     <!-- Map -->
     <div id="map"></div>
+
+    <!-- About button (popup only — never auto-opens) -->
+    <button @click="$store.infoOverlay.open = true" class="about-btn" title="About & Announcements">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+    </button>
+
+    <!-- Filter toggle button -->
+    <button @click="showFilters = !showFilters" class="filter-toggle-btn" title="Filter cameras">
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+        </svg>
+    </button>
+
+    <!-- Add camera button (bottom-right "+") — enters the same pick-a-location flow as before -->
+    <button @click="pickMode ? exitPickMode() : (Alpine.store('viewport').triggerPickMode = true)"
+            class="add-camera-btn"
+            :class="{ 'cancel-mode': pickMode }"
+            :title="pickMode ? 'Cancel' : 'Report a camera'">
+        <svg x-show="!pickMode" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+        </svg>
+        <svg x-show="pickMode" class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+    </button>
 
     <!-- Filter Panel -->
     <div x-show="showFilters"
@@ -203,23 +262,15 @@
 
         <label class="flex items-center space-x-2 mb-3 cursor-pointer">
             <input type="checkbox"
-                   x-model="filters.hasShop"
-                   @change="applyFilters()"
-                   class="form-checkbox rounded text-nola-purple">
-            <span class="text-sm">Has associated business</span>
-        </label>
-
-        <label class="flex items-center space-x-2 mb-3 cursor-pointer">
-            <input type="checkbox"
                    x-model="filters.noPictures"
                    @change="applyFilters()"
-                   class="form-checkbox rounded text-nola-purple">
+                   class="form-checkbox rounded text-mit-red">
             <span class="text-sm">No photos yet</span>
         </label>
 
         <div class="pt-2 border-t border-gray-200">
             <button @click="resetFilters()"
-                    class="text-sm text-nola-purple hover:text-purple-700">
+                    class="text-sm text-mit-red hover:text-mit-red-dark">
                 Reset Filters
             </button>
         </div>
@@ -241,8 +292,8 @@
          class="camera-detail-panel">
         <div class="md:hidden drag-handle"></div>
         <div class="p-4">
-            <div class="flex justify-between items-start mb-3">
-                <h3 class="font-semibold text-lg" x-text="selectedCamera?.properties?.cross_road"></h3>
+            <div class="flex justify-between items-start mb-1">
+                <p class="text-xs font-medium tracking-wide text-mit-red uppercase">MIT Camera</p>
                 <div class="flex items-center gap-1 flex-shrink-0 ml-2">
                     <button @click="copyDeepLink()" title="Copy link to this camera"
                             class="text-gray-400 hover:text-gray-600 flex items-center">
@@ -260,9 +311,23 @@
                 </div>
             </div>
 
-            <template x-if="selectedCamera?.properties?.street_address">
-                <p class="text-gray-600 text-sm mb-3" x-text="selectedCamera.properties.street_address"></p>
-            </template>
+            <h3 class="font-semibold text-lg text-gray-900 mb-3" x-text="cameraTitle"></h3>
+
+            <!-- Location details — only rendered when present -->
+            <div class="space-y-1 mb-3 text-sm text-gray-600">
+                <template x-if="selectedCamera?.properties?.street_address">
+                    <p x-text="selectedCamera.properties.street_address"></p>
+                </template>
+                <template x-if="selectedCamera?.properties?.building">
+                    <p><span class="text-gray-400">Building:</span> <span x-text="selectedCamera.properties.building"></span></p>
+                </template>
+                <template x-if="selectedCamera?.properties?.floor">
+                    <p><span class="text-gray-400">Floor:</span> <span x-text="selectedCamera.properties.floor"></span></p>
+                </template>
+                <template x-if="selectedCamera?.properties?.nearby_room">
+                    <p><span class="text-gray-400">Near:</span> <span x-text="selectedCamera.properties.nearby_room"></span></p>
+                </template>
+            </div>
 
             <div class="flex flex-wrap gap-2 mb-4">
                 <template x-if="selectedCamera?.properties?.facial_recognition">
@@ -270,11 +335,6 @@
                 </template>
                 <template x-if="selectedCamera?.properties?.associated_shop">
                     <span class="badge badge-shop" x-text="selectedCamera.properties.associated_shop"></span>
-                </template>
-                <template x-if="selectedCamera?.properties?.camera_type">
-                    <span class="badge"
-                          :style="`background-color: ${CAMERA_TYPE_COLORS[selectedCamera.properties.camera_type]}22; color: ${CAMERA_TYPE_COLORS[selectedCamera.properties.camera_type]};`"
-                          x-text="CAMERA_TYPE_LABELS[selectedCamera.properties.camera_type] || selectedCamera.properties.camera_type"></span>
                 </template>
             </div>
 
@@ -306,9 +366,14 @@
                 </div>
             </template>
 
-            <div class="mt-3">
+            <template x-if="selectedCamera?.properties?.reporter_notes">
+                <p class="text-sm text-gray-600 bg-gray-50 border border-gray-100 rounded-lg p-3 mb-4"
+                   x-text="selectedCamera.properties.reporter_notes"></p>
+            </template>
+
+            <div class="pt-3 border-t border-gray-100 space-y-2">
                 <a :href="`/cameras/${selectedCamera?.id}/propose-photo/`"
-                   class="text-sm text-nola-purple hover:text-purple-700 font-medium inline-flex items-center gap-1">
+                   class="text-sm text-mit-red hover:text-mit-red-dark font-medium inline-flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
@@ -316,11 +381,9 @@
                     </svg>
                     Propose a photo
                 </a>
-            </div>
 
-            <div class="mt-2">
                 <a :href="`/cameras/${selectedCamera?.id}/propose-correction/`"
-                   class="text-sm text-gray-500 hover:text-gray-700 font-medium inline-flex items-center gap-1">
+                   class="block text-sm text-gray-500 hover:text-gray-700 font-medium inline-flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                               d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -329,45 +392,15 @@
                 </a>
             </div>
 
-            <div class="text-xs text-gray-500 mt-2">
-                <span>Coordinates: </span>
+            <div class="text-xs text-gray-400 mt-3">
                 <span x-text="selectedCamera?.geometry?.coordinates[1]?.toFixed(6)"></span>,
                 <span x-text="selectedCamera?.geometry?.coordinates[0]?.toFixed(6)"></span>
             </div>
         </div>
     </div>
 
-    <!-- Legend + Camera Count -->
+    <!-- Camera Count -->
     <div class="absolute bottom-4 left-4 z-[1000] flex flex-col gap-1">
-        <div x-show="!loading && legendEntries.length > 0"
-             class="bg-white rounded-lg shadow px-3 py-2 text-xs text-gray-600">
-            <template x-for="entry in legendEntries" :key="entry.type">
-                <div class="flex items-center gap-2 mb-1 last:mb-0">
-                    <span class="w-3 h-3 rounded-full flex-shrink-0 transition-opacity"
-                          :style="`background-color: ${CAMERA_TYPE_COLORS[entry.type]}`"
-                          :class="hiddenTypes[entry.type] ? 'opacity-30' : ''"></span>
-                    <span class="flex-1 transition-opacity"
-                          :class="hiddenTypes[entry.type] ? 'opacity-40' : ''"
-                          x-text="CAMERA_TYPE_LABELS[entry.type]"></span>
-                    <span class="font-medium transition-opacity"
-                          :class="hiddenTypes[entry.type] ? 'opacity-40' : ''"
-                          x-text="entry.count"></span>
-                    <button @click.stop="toggleType(entry.type)"
-                            class="ml-1 flex-shrink-0 text-gray-400 hover:text-gray-600 transition-colors"
-                            :title="hiddenTypes[entry.type] ? 'Show layer' : 'Hide layer'">
-                        <!-- Eye open -->
-                        <svg x-show="!hiddenTypes[entry.type]" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                        </svg>
-                        <!-- Eye crossed out -->
-                        <svg x-show="hiddenTypes[entry.type]" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
-                        </svg>
-                    </button>
-                </div>
-            </template>
-        </div>
         <div class="bg-white rounded-lg shadow px-3 py-2 text-sm text-gray-600">
             <span x-text="cameraCount"></span> cameras
         </div>
@@ -391,7 +424,7 @@
 
         <!-- Header -->
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-            <img src="{% static 'images/eye-on-surveillance.png' %}" alt="Eye on Surveillance" class="h-10 w-auto">
+            <h2 class="text-lg font-semibold text-gray-900">About</h2>
             <button @click="$store.infoOverlay.open = false" class="text-gray-400 hover:text-gray-600">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -402,10 +435,10 @@
         <!-- Tabs -->
         <div class="flex border-b border-gray-200 px-6">
             <button @click="$store.infoOverlay.tab = 'about'"
-                    :class="$store.infoOverlay.tab === 'about' ? 'border-b-2 border-nola-purple text-nola-purple' : 'text-gray-500 hover:text-gray-700'"
+                    :class="$store.infoOverlay.tab === 'about' ? 'border-b-2 border-mit-red text-mit-red' : 'text-gray-500 hover:text-gray-700'"
                     class="py-3 px-4 text-sm font-medium">About</button>
             <button @click="$store.infoOverlay.tab = 'announcements'"
-                    :class="$store.infoOverlay.tab === 'announcements' ? 'border-b-2 border-nola-purple text-nola-purple' : 'text-gray-500 hover:text-gray-700'"
+                    :class="$store.infoOverlay.tab === 'announcements' ? 'border-b-2 border-mit-red text-mit-red' : 'text-gray-500 hover:text-gray-700'"
                     class="py-3 px-4 text-sm font-medium">Announcements</button>
         </div>
 
@@ -418,15 +451,6 @@
                 {% else %}
                     <p class="text-gray-500 italic">No about text yet. Add it from the Django admin.</p>
                 {% endif %}
-                <div class="mt-5 pt-4 border-t border-gray-100">
-                    <label class="flex items-center gap-2 cursor-pointer select-none">
-                        <input type="checkbox"
-                               :checked="$store.infoOverlay.doNotShow"
-                               @change="$store.infoOverlay.setDoNotShow($event.target.checked)"
-                               class="rounded text-nola-purple">
-                        <span class="text-sm text-gray-500">Do not show again</span>
-                    </label>
-                </div>
             </div>
 
             <!-- Announcements tab -->
@@ -446,19 +470,13 @@
         </div>
     </div>
 </div>
-
-<script>
-document.getElementById('filter-toggle').addEventListener('click', function() {
-    Alpine.store('map')?.toggleFilters?.() || document.querySelector('[x-data]').__x.$data.showFilters = !document.querySelector('[x-data]').__x.$data.showFilters;
-});
-</script>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.store('viewport', {
-        lat: 29.9511, lng: -90.0715, zoom: 12,
+        lat: 42.3601, lng: -71.0942, zoom: 16,
         pickMode: false,
         pinnedLat: null, pinnedLng: null,
         triggerPickMode: false,
@@ -470,52 +488,27 @@ document.addEventListener('alpine:init', () => {
         }
     });
     Alpine.store('infoOverlay', {
-        open: localStorage.getItem('hide_about_section') !== '1',
+        open: false,
         tab: 'about',
-        get doNotShow() {
-            return localStorage.getItem('hide_about_section') === '1';
-        },
-        setDoNotShow(val) {
-            if (val) {
-                localStorage.setItem('hide_about_section', '1');
-            } else {
-                localStorage.removeItem('hide_about_section');
-            }
-        },
     });
 });
 
-const CAMERA_TYPE_COLORS = {
-    project_nola: '#ea580c',
-    nopd:         '#2563eb',
-    private:      '#d97706',
-    traffic:      '#16a34a',
-    alpr:         '#166534',
-    unknown:      '#6b7280',
-};
+const MIT_CAMERA_COLOR = '#A31F34';
+const MIT_CAMERA_SELECTED_COLOR = '#f97316';
 
-const CAMERA_TYPE_LABELS = {
-    project_nola: 'Project NOLA',
-    nopd:         'NOPD',
-    private:      'Private',
-    traffic:      'Traffic',
-    alpr:         'ALPR',
-    unknown:      'Unknown',
-};
-
-const CAMERA_TYPES = Object.keys(CAMERA_TYPE_COLORS);
-
-function createMarkerIcon(cameraType, isFR) {
-    const color = CAMERA_TYPE_COLORS[cameraType] || CAMERA_TYPE_COLORS.unknown;
+function createMarkerIcon(isFR, isSelected) {
+    const color = isSelected ? MIT_CAMERA_SELECTED_COLOR : MIT_CAMERA_COLOR;
+    const radius = isSelected ? 11 : 10;
+    const size = isSelected ? 26 : 24;
+    const half = size / 2;
     const frBadge = isFR
-        ? '<circle cx="19" cy="5" r="4" fill="#dc2626" stroke="white" stroke-width="1.5"/>'
+        ? `<circle cx="${size - 5}" cy="5" r="4" fill="#dc2626" stroke="white" stroke-width="1.5"/>`
         : '';
     return L.divIcon({
-        html: `<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10" fill="${color}" stroke="white" stroke-width="2"/>${frBadge}</svg>`,
+        html: `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="${half}" cy="${half}" r="${radius}" fill="${color}" stroke="white" stroke-width="2"/>${frBadge}</svg>`,
         className: '',
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-        popupAnchor: [0, -12],
+        iconSize: [size, size],
+        iconAnchor: [half, half],
     });
 }
 
@@ -537,7 +530,8 @@ function makeClusterIcon(color) {
 function cameraMap() {
     return {
         map: null,
-        clusterGroups: {},
+        clusterGroup: null,
+        markersById: {},
         cameras: [],
         selectedCamera: null,
         currentImageIndex: 0,
@@ -548,18 +542,9 @@ function cameraMap() {
         cameraCount: 0,
         pickMode: false,
         pickMarker: null,
-        typeCounts: Object.fromEntries(CAMERA_TYPES.map(t => [t, 0])),
-        hiddenTypes: Object.fromEntries(CAMERA_TYPES.map(t => [t, false])),
         filters: {
             facialRecognition: false,
-            hasShop: false,
             noPictures: false,
-        },
-
-        get legendEntries() {
-            return CAMERA_TYPES
-                .filter(t => this.typeCounts[t] > 0 || this.hiddenTypes[t])
-                .map(t => ({ type: t, count: this.typeCounts[t] }));
         },
 
         get cameraImages() {
@@ -568,30 +553,35 @@ function cameraMap() {
             return photos.map(p => p.url);
         },
 
+        get cameraTitle() {
+            return this.selectedCamera?.id ? `Camera ${this.selectedCamera.id.slice(0, 8)}` : '';
+        },
+
         init() {
-            // Initialize map centered on New Orleans
-            this.map = L.map('map').setView([29.9511, -90.0715], 12);
+            // Initialize map centered on MIT
+            this.map = L.map('map').setView([42.3601, -71.0942], 16);
 
             // Add map tiles (Carto Voyager — production-safe, OSM data)
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png?key={{ carto_api_key }}', {
                 maxZoom: 19,
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
                 subdomains: 'abcd',
             }).addTo(this.map);
 
-            // Initialize per-type marker cluster groups
-            const TYPES = CAMERA_TYPES;
-            this.clusterGroups = {};
-            for (const type of TYPES) {
-                this.clusterGroups[type] = L.markerClusterGroup({
-                    maxClusterRadius: 50,
-                    spiderfyOnMaxZoom: true,
-                    showCoverageOnHover: false,
-                    zoomToBoundsOnClick: true,
-                    iconCreateFunction: makeClusterIcon(CAMERA_TYPE_COLORS[type])
-                });
-                this.map.addLayer(this.clusterGroups[type]);
-            }
+            // The container can report a stale size at init time (CSS/layout
+            // settling after Alpine's x-init fires); force Leaflet to recheck.
+            requestAnimationFrame(() => this.map.invalidateSize());
+            window.addEventListener('resize', () => this.map.invalidateSize());
+
+            // Initialize marker cluster group
+            this.clusterGroup = L.markerClusterGroup({
+                maxClusterRadius: 50,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false,
+                zoomToBoundsOnClick: true,
+                iconCreateFunction: makeClusterIcon(MIT_CAMERA_COLOR)
+            });
+            this.map.addLayer(this.clusterGroup);
 
             // Sync viewport store on pan/zoom
             this.map.on('moveend', () => {
@@ -617,9 +607,23 @@ function cameraMap() {
                 }
             });
 
-            // Reset image index and sync URL when a different camera is selected
-            this.$watch('selectedCamera', (camera) => {
+            // Reset image index, sync URL, and highlight the selected marker
+            this.$watch('selectedCamera', (camera, previousCamera) => {
                 this.currentImageIndex = 0;
+
+                if (previousCamera) {
+                    const prevMarker = this.markersById[previousCamera.id];
+                    if (prevMarker) {
+                        prevMarker.setIcon(createMarkerIcon(previousCamera.properties.facial_recognition, false));
+                    }
+                }
+                if (camera) {
+                    const marker = this.markersById[camera.id];
+                    if (marker) {
+                        marker.setIcon(createMarkerIcon(camera.properties.facial_recognition, true));
+                    }
+                }
+
                 const url = new URL(window.location);
                 if (camera) {
                     url.searchParams.set('camera', camera.id);
@@ -631,12 +635,6 @@ function cameraMap() {
 
             // Load cameras
             this.loadCameras();
-
-            // Handle filter toggle button
-            const self = this;
-            document.getElementById('filter-toggle').addEventListener('click', function() {
-                self.showFilters = !self.showFilters;
-            });
         },
 
         async loadCameras() {
@@ -647,9 +645,6 @@ function cameraMap() {
 
                 if (this.filters.facialRecognition) {
                     params.append('facial_recognition', 'true');
-                }
-                if (this.filters.hasShop) {
-                    params.append('has_shop', 'true');
                 }
                 if (this.filters.noPictures) {
                     params.append('no_photos', 'true');
@@ -686,60 +681,27 @@ function cameraMap() {
         },
 
         renderMarkers() {
-            // Clear all cluster groups
-            for (const group of Object.values(this.clusterGroups)) {
-                group.clearLayers();
-            }
-
-            // Reset type counts
-            this.typeCounts = Object.fromEntries(CAMERA_TYPES.map(t => [t, 0]));
+            this.clusterGroup.clearLayers();
+            this.markersById = {};
 
             this.cameras.forEach(camera => {
                 const coords = camera.geometry.coordinates;
                 const props = camera.properties;
-                const cameraType = props.camera_type || 'unknown';
-
-                // Track per-type counts
-                if (cameraType in this.typeCounts) {
-                    this.typeCounts[cameraType]++;
-                }
+                const isSelected = this.selectedCamera?.id === camera.id;
 
                 // Create custom icon
-                const icon = createMarkerIcon(cameraType, props.facial_recognition);
+                const icon = createMarkerIcon(props.facial_recognition, isSelected);
 
                 const marker = L.marker([coords[1], coords[0]], { icon: icon });
 
-                // Click handler to show detail panel
+                // Click handler to show detail panel (no popup — the detail panel on the left is the single source of truth)
                 marker.on('click', () => {
                     if (this.pickMode) return;
                     this.selectedCamera = camera;
                 });
 
-                // Popup for quick view
-                const popupContent = `
-                    <div class="camera-popup">
-                        <h3>${props.cross_road}</h3>
-                        ${props.street_address ? `<p class="text-gray-600 text-sm">${props.street_address}</p>` : ''}
-                        <div class="flex gap-1 mt-2">
-                            ${props.facial_recognition ? '<span class="badge badge-fr">FR</span>' : ''}
-                            ${props.associated_shop ? `<span class="badge badge-shop">${props.associated_shop}</span>` : ''}
-                        </div>
-                    </div>
-                `;
-                marker.bindPopup(popupContent);
-
-                if (this.filters.hasShop && props.associated_shop) {
-                    marker.bindTooltip(props.associated_shop, {
-                        permanent: true,
-                        direction: 'right',
-                        offset: [6, 0],
-                        className: 'business-label',
-                    });
-                }
-
-                // Route to the correct cluster group
-                const group = this.clusterGroups[cameraType] || this.clusterGroups['unknown'];
-                group.addLayer(marker);
+                this.markersById[camera.id] = marker;
+                this.clusterGroup.addLayer(marker);
             });
         },
 
@@ -749,18 +711,8 @@ function cameraMap() {
 
         resetFilters() {
             this.filters.facialRecognition = false;
-            this.filters.hasShop = false;
             this.filters.noPictures = false;
             this.loadCameras();
-        },
-
-        toggleType(type) {
-            this.hiddenTypes[type] = !this.hiddenTypes[type];
-            if (this.hiddenTypes[type]) {
-                this.map.removeLayer(this.clusterGroups[type]);
-            } else {
-                this.map.addLayer(this.clusterGroups[type]);
-            }
         },
 
         enterPickMode() {
@@ -833,7 +785,7 @@ function cameraMap() {
                                 iconSize: [16, 16],
                                 iconAnchor: [8, 8]
                             })
-                        }).addTo(this.map).bindPopup('You are here');
+                        }).addTo(this.map);
                     },
                     (error) => {
                         alert('Unable to get your location. Please enable location services.');

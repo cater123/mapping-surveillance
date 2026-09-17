@@ -1,5 +1,5 @@
 """
-Base Django settings for New Orleans surveillance mapping project.
+Base Django settings for MIT surveillance mapping project.
 """
 
 import os
@@ -18,6 +18,11 @@ SECRET_KEY = os.environ.get(
 DEBUG = os.environ.get("DJANGO_DEBUG", "True").lower() == "true"
 
 ALLOWED_HOSTS = os.environ.get("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+
+GDAL_LIBRARY_PATH = os.environ.get("GDAL_LIBRARY_PATH")
+GEOS_LIBRARY_PATH = os.environ.get("GEOS_LIBRARY_PATH")
+
+CARTO_API_KEY = os.environ.get("CARTO_API_KEY", "")
 
 # Application definition
 INSTALLED_APPS = [
@@ -98,7 +103,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Internationalization
 LANGUAGE_CODE = "en-us"
-TIME_ZONE = "America/Chicago"  # New Orleans timezone
+TIME_ZONE = "America/New_York"  # MIT (Cambridge, MA) timezone
 USE_I18N = True
 USE_TZ = True
 

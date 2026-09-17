@@ -15,6 +15,24 @@ def validate_image_file_size(image):
         raise forms.ValidationError(f"Image too large. Maximum size is {_MAX_IMAGE_SIZE_MB} MB.")
 
 
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+
+class MultipleFileField(forms.FileField):
+    """A FileField that accepts multiple uploaded files."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput(attrs={"accept": "image/*"}))
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            return [single_file_clean(d, initial) for d in data]
+        return [single_file_clean(data, initial)] if data else []
+
+
 class CameraReportForm(forms.ModelForm):
     """
     Form for public camera submissions.
@@ -43,49 +61,47 @@ class CameraReportForm(forms.ModelForm):
         max_value=180,
     )
 
-    # Image slots — not model fields, handled in view
-    image_close_up = forms.ImageField(
-        required=False,
-        validators=[validate_image_file_size],
-        widget=forms.FileInput(attrs={"class": "form-file", "accept": "image/*"}),
-    )
-    image_surrounding = forms.ImageField(
-        required=False,
-        validators=[validate_image_file_size],
-        widget=forms.FileInput(attrs={"class": "form-file", "accept": "image/*"}),
-    )
-    image_project_nola_sign = forms.ImageField(
-        required=False,
-        validators=[validate_image_file_size],
-        widget=forms.FileInput(attrs={"class": "form-file", "accept": "image/*"}),
-    )
+    # Not a model field — handled in the view
+    pictures = MultipleFileField(required=False)
 
     class Meta:
         model = Camera
         fields = [
             "cross_road",
-            "street_address",
-            "associated_shop",
-            "reported_by",
+            "building",
+            "floor",
+            "nearby_room",
+            "reporter_notes",
         ]
         widgets = {
             "cross_road": forms.TextInput(attrs={
                 "class": "form-input",
-                "placeholder": "e.g., Canal St & Bourbon St",
+                "placeholder": "e.g., Massachusetts Ave & Amherst St (optional)",
             }),
-            "street_address": forms.TextInput(attrs={
+            "building": forms.TextInput(attrs={
                 "class": "form-input",
-                "placeholder": "e.g., 123 Main St (optional)",
+                "placeholder": "e.g., Building 32 (Stata Center) (optional)",
             }),
-            "associated_shop": forms.TextInput(attrs={
+            "floor": forms.TextInput(attrs={
                 "class": "form-input",
-                "placeholder": "e.g., Corner Store (optional)",
+                "placeholder": "e.g., 3rd floor (optional)",
             }),
-            "reported_by": forms.TextInput(attrs={
+            "nearby_room": forms.TextInput(attrs={
                 "class": "form-input",
-                "placeholder": "Your email or name (optional)",
+                "placeholder": "e.g., Room 204, near the elevator (optional)",
+            }),
+            "reporter_notes": forms.Textarea(attrs={
+                "class": "form-input",
+                "rows": 4,
+                "placeholder": "Anything else you'd like to add (optional)",
             }),
         }
+
+    def clean_pictures(self):
+        pictures = self.cleaned_data.get("pictures") or []
+        for picture in pictures:
+            validate_image_file_size(picture)
+        return pictures
 
     def clean(self):
         cleaned_data = super().clean()
@@ -128,13 +144,9 @@ class PhotoProposalForm(forms.ModelForm):
 
     class Meta:
         model = CameraImage
-        fields = ["image", "photo_type", "proposed_by"]
+        fields = ["image", "photo_type"]
         widgets = {
             "image": forms.FileInput(attrs={"accept": "image/*"}),
-            "proposed_by": forms.TextInput(attrs={
-                "class": "form-input",
-                "placeholder": "Your email or name (optional)",
-            }),
         }
 
     def clean_image(self):
@@ -173,16 +185,12 @@ class CorrectionProposalForm(forms.ModelForm):
 
     class Meta:
         model = CorrectionProposal
-        fields = ["message", "proposed_by"]
+        fields = ["message"]
         widgets = {
             "message": forms.Textarea(attrs={
                 "class": "form-input",
                 "rows": 5,
                 "placeholder": "Describe what needs to be corrected or updated (e.g., wrong address, camera removed, type changed...)",
-            }),
-            "proposed_by": forms.TextInput(attrs={
-                "class": "form-input",
-                "placeholder": "Your email or name (optional)",
             }),
         }
 

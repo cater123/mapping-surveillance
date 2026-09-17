@@ -46,7 +46,6 @@ OUTPUT_FIELDS = [
     "longitude",
     "facial_recognition",
     "associated_shop",
-    "camera_type",
     "manufacturer",
     "direction",
     "status",
@@ -72,7 +71,6 @@ def node_to_row(node) -> dict:
 
     surveillance_type = tags.get("surveillance:type", "")
     facial_recognition = "True" if surveillance_type.lower() == "fr" else "False"
-    camera_type = "alpr" if surveillance_type == "ALPR" else "unknown"
 
     manufacturer = tags.get("manufacturer", "")
     direction = tags.get("direction", "")
@@ -90,7 +88,6 @@ def node_to_row(node) -> dict:
         "longitude": float(node.lon),
         "facial_recognition": facial_recognition,
         "associated_shop": tags.get("name", ""),
-        "camera_type": camera_type,
         "manufacturer": manufacturer,
         "direction": direction,
         "status": "pending",

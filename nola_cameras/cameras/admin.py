@@ -47,16 +47,19 @@ class CameraResource(resources.ModelResource):
             "osm_id",
             "cross_road",
             "street_address",
+            "building",
+            "floor",
+            "nearby_room",
             "latitude",
             "longitude",
             "facial_recognition",
             "associated_shop",
-            "camera_type",
             "manufacturer",
             "direction",
             "status",
             "reported_by",
             "reported_at",
+            "reporter_notes",
             "vetted_at",
             "vetted_by_username",
             "notes",
@@ -147,7 +150,6 @@ class CameraAdmin(ImportExportMixin, GISModelAdmin):
         "short_id",
         "cross_road",
         "status_badge",
-        "camera_type_badge",
         "facial_recognition_badge",
         "associated_shop",
         "reported_at",
@@ -156,7 +158,6 @@ class CameraAdmin(ImportExportMixin, GISModelAdmin):
     list_display_links = ["short_id"]
     list_filter = [
         "status",
-        "camera_type",
         "facial_recognition",
         ("vetted_at", admin.EmptyFieldListFilter),
         "reported_at",
@@ -164,8 +165,12 @@ class CameraAdmin(ImportExportMixin, GISModelAdmin):
     search_fields = [
         "cross_road",
         "street_address",
+        "building",
+        "floor",
+        "nearby_room",
         "associated_shop",
         "reported_by",
+        "reporter_notes",
         "notes",
         "osm_id",
     ]
@@ -182,14 +187,13 @@ class CameraAdmin(ImportExportMixin, GISModelAdmin):
         (
             "Location",
             {
-                "fields": ("cross_road", "street_address", "location"),
+                "fields": ("cross_road", "street_address", "building", "floor", "nearby_room", "location"),
             },
         ),
         (
             "Camera Details",
             {
                 "fields": (
-                    "camera_type",
                     "manufacturer",
                     "direction",
                     "facial_recognition",
@@ -206,7 +210,7 @@ class CameraAdmin(ImportExportMixin, GISModelAdmin):
         (
             "Reporter Information",
             {
-                "fields": ("reported_by", "reported_at"),
+                "fields": ("reported_by", "reported_at", "reporter_notes"),
                 "classes": ("collapse",),
             },
         ),
@@ -228,9 +232,9 @@ class CameraAdmin(ImportExportMixin, GISModelAdmin):
 
     gis_widget_kwargs = {
         "attrs": {
-            "default_lat": 29.9511,
-            "default_lon": -90.0715,
-            "default_zoom": 12,
+            "default_lat": 42.3601,
+            "default_lon": -71.0942,
+            "default_zoom": 16,
         },
     }
 
@@ -256,26 +260,6 @@ class CameraAdmin(ImportExportMixin, GISModelAdmin):
 
     status_badge.short_description = "Status"
     status_badge.admin_order_field = "status"
-
-    def camera_type_badge(self, obj):
-        colors = {
-            Camera.CameraType.PROJECT_NOLA: "#6b46c1",
-            Camera.CameraType.NOPD: "#2563eb",
-            Camera.CameraType.PRIVATE: "#ea580c",
-            Camera.CameraType.TRAFFIC: "#16a34a",
-            Camera.CameraType.ALPR: "#b45309",
-            Camera.CameraType.UNKNOWN: "#6b7280",
-        }
-        color = colors.get(obj.camera_type, "#6b7280")
-        return format_html(
-            '<span style="background-color: {}; color: white; padding: 3px 8px; '
-            'border-radius: 4px; font-size: 11px;">{}</span>',
-            color,
-            obj.get_camera_type_display(),
-        )
-
-    camera_type_badge.short_description = "Type"
-    camera_type_badge.admin_order_field = "camera_type"
 
     def facial_recognition_badge(self, obj):
         if obj.facial_recognition:
@@ -473,6 +457,6 @@ class AnnouncementAdmin(admin.ModelAdmin):
 
 
 # Customize admin site
-admin.site.site_header = "New Orleans surveillance map admin"
-admin.site.site_title = "New Orleans Cameras"
+admin.site.site_header = "MIT surveillance map admin"
+admin.site.site_title = "MIT Cameras"
 admin.site.index_title = "Camera Management"

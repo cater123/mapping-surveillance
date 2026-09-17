@@ -50,7 +50,7 @@ class MapViewOGTests(TestCase):
         response = self.client.get(reverse("map"), {"camera": str(camera.pk)})
         og = response.context["og"]
         self.assertIsNotNone(og)
-        self.assertIn("Canal St & Royal St", og["title"])
+        self.assertIn(str(camera.id)[:8], og["title"])
         self.assertIn("camera", og["description"])
         self.assertIn(str(camera.pk), og["url"])
         self.assertIsNone(og["image_url"])
@@ -81,7 +81,7 @@ class MapViewOGTests(TestCase):
         camera = make_camera(cross_road="Bourbon St & St Charles Ave")
         response = self.client.get(reverse("map"), {"camera": str(camera.pk)})
         self.assertContains(response, f"?camera={camera.pk}")
-        self.assertContains(response, "Bourbon St")
+        self.assertContains(response, str(camera.id))
 
 
 class ReportViewTests(TestCase):
@@ -102,9 +102,7 @@ class ReportViewTests(TestCase):
 
     def test_report_view_post_invalid_stays(self):
         data = {
-            "cross_road": "",
-            "latitude": "29.9545",
-            "longitude": "-90.0790",
+            "cross_road": "St Charles Ave & Canal St",
             "website": "",
         }
         response = self.client.post(reverse("report"), data)
@@ -142,16 +140,12 @@ class CameraReportViewImageTests(TestCase):
             "website": "",
         }
         files = {
-            "image_close_up": make_image_file("close_up.jpg"),
-            "image_surrounding": make_image_file("surrounding.jpg"),
+            "pictures": [make_image_file("close_up.jpg"), make_image_file("surrounding.jpg")],
         }
         self.client.post(reverse("report"), {**data, **files})
         camera = Camera.objects.get(cross_road="St Charles Ave & Canal St")
         images = CameraImage.objects.filter(camera=camera)
         self.assertEqual(images.count(), 2)
-        types = set(images.values_list("photo_type", flat=True))
-        self.assertIn(CameraImage.PhotoType.CLOSE_UP, types)
-        self.assertIn(CameraImage.PhotoType.SURROUNDING, types)
         self.assertTrue(all(img.status == CameraImage.Status.PENDING for img in images))
 
 

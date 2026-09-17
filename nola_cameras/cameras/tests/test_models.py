@@ -1,12 +1,14 @@
 import re
+import tempfile
 
 from django.contrib.auth.models import User
 from django.contrib.gis.geos import Point
-from django.test import TestCase
+from django.test import TestCase, override_settings
+from PIL import Image
 
 from cameras.models import Camera, CameraImage, CorrectionProposal, _camera_image_upload_to
 
-from .utils import make_camera, make_camera_image, make_correction_proposal
+from .utils import make_camera, make_camera_image, make_correction_proposal, make_image_file_with_exif
 
 
 class CameraDefaultStatusTest(TestCase):
@@ -27,7 +29,7 @@ class CameraPropertyTests(TestCase):
         self.assertAlmostEqual(self.camera.longitude, -90.0715, places=4)
 
     def test_str_representation(self):
-        self.assertIn(self.camera.cross_road, str(self.camera))
+        self.assertIn(str(self.camera.id), str(self.camera))
 
 
 class CameraApproveRejectTests(TestCase):
@@ -118,6 +120,42 @@ class CameraImageTests(TestCase):
         self.assertEqual(img.status, CameraImage.Status.REJECTED)
         self.assertEqual(img.reviewed_by, self.user)
         self.assertIsNotNone(img.reviewed_at)
+
+
+@override_settings(MEDIA_ROOT=tempfile.mkdtemp())
+class CameraImageMetadataStrippingTests(TestCase):
+    def setUp(self):
+        self.camera = make_camera()
+
+    def test_uploaded_image_strips_exif_and_gps_metadata(self):
+        upload = make_image_file_with_exif()
+
+        # sanity check: the fixture really does carry EXIF/GPS before upload
+        source_exif = Image.open(upload).getexif()
+        self.assertIn(271, source_exif)
+        self.assertTrue(source_exif.get_ifd(34853))
+        upload.seek(0)
+
+        img = CameraImage.objects.create(camera=self.camera, image=upload)
+        img.refresh_from_db()
+
+        saved_exif = Image.open(img.image).getexif()
+        self.assertEqual(dict(saved_exif), {})
+
+    def test_stripped_image_still_valid_and_correct_size(self):
+        upload = make_image_file_with_exif()
+        img = CameraImage.objects.create(camera=self.camera, image=upload)
+        img.refresh_from_db()
+
+        reopened = Image.open(img.image)
+        reopened.verify()
+        self.assertEqual(Image.open(img.image).size, (4, 4))
+
+    def test_string_path_assignment_is_not_reprocessed(self):
+        # Fixtures/tests commonly pass a bare path string rather than a real
+        # upload; this must not attempt to open/re-encode a nonexistent file.
+        img = CameraImage.objects.create(camera=self.camera, image="camera_images/test.jpg")
+        self.assertEqual(img.image.name, "camera_images/test.jpg")
 
 
 class CorrectionProposalTests(TestCase):

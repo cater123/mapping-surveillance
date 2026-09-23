@@ -315,9 +315,6 @@
 
             <!-- Location details — only rendered when present -->
             <div class="space-y-1 mb-3 text-sm text-gray-600">
-                <template x-if="selectedCamera?.properties?.street_address">
-                    <p x-text="selectedCamera.properties.street_address"></p>
-                </template>
                 <template x-if="selectedCamera?.properties?.building">
                     <p><span class="text-gray-400">Building:</span> <span x-text="selectedCamera.properties.building"></span></p>
                 </template>
@@ -327,16 +324,11 @@
                 <template x-if="selectedCamera?.properties?.nearby_room">
                     <p><span class="text-gray-400">Near:</span> <span x-text="selectedCamera.properties.nearby_room"></span></p>
                 </template>
+                <template x-if="selectedCamera?.properties?.placement">
+                    <p><span class="text-gray-400">Placement:</span> <span x-text="selectedCamera.properties.placement === 'indoor' ? 'Indoor' : 'Outdoor'"></span></p>
+                </template>
             </div>
 
-            <div class="flex flex-wrap gap-2 mb-4">
-                <template x-if="selectedCamera?.properties?.facial_recognition">
-                    <span class="badge badge-fr">Facial Recognition</span>
-                </template>
-                <template x-if="selectedCamera?.properties?.associated_shop">
-                    <span class="badge badge-shop" x-text="selectedCamera.properties.associated_shop"></span>
-                </template>
-            </div>
 
             <template x-if="cameraImages.length > 0">
                 <div class="mb-4 relative">
@@ -496,16 +488,13 @@ document.addEventListener('alpine:init', () => {
 const MIT_CAMERA_COLOR = '#A31F34';
 const MIT_CAMERA_SELECTED_COLOR = '#f97316';
 
-function createMarkerIcon(isFR, isSelected) {
+function createMarkerIcon(isSelected) {
     const color = isSelected ? MIT_CAMERA_SELECTED_COLOR : MIT_CAMERA_COLOR;
     const radius = isSelected ? 11 : 10;
     const size = isSelected ? 26 : 24;
     const half = size / 2;
-    const frBadge = isFR
-        ? `<circle cx="${size - 5}" cy="5" r="4" fill="#dc2626" stroke="white" stroke-width="1.5"/>`
-        : '';
     return L.divIcon({
-        html: `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="${half}" cy="${half}" r="${radius}" fill="${color}" stroke="white" stroke-width="2"/>${frBadge}</svg>`,
+        html: `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg"><circle cx="${half}" cy="${half}" r="${radius}" fill="${color}" stroke="white" stroke-width="2"/></svg>`,
         className: '',
         iconSize: [size, size],
         iconAnchor: [half, half],
@@ -543,7 +532,6 @@ function cameraMap() {
         pickMode: false,
         pickMarker: null,
         filters: {
-            facialRecognition: false,
             noPictures: false,
         },
 
@@ -558,6 +546,7 @@ function cameraMap() {
         },
 
         init() {
+            if (this.map) return; // guard against Alpine re-running x-init on this element
             // Initialize map centered on MIT
             this.map = L.map('map').setView([42.3601, -71.0942], 16);
 
@@ -614,13 +603,13 @@ function cameraMap() {
                 if (previousCamera) {
                     const prevMarker = this.markersById[previousCamera.id];
                     if (prevMarker) {
-                        prevMarker.setIcon(createMarkerIcon(previousCamera.properties.facial_recognition, false));
+                        prevMarker.setIcon(createMarkerIcon(false));
                     }
                 }
                 if (camera) {
                     const marker = this.markersById[camera.id];
                     if (marker) {
-                        marker.setIcon(createMarkerIcon(camera.properties.facial_recognition, true));
+                        marker.setIcon(createMarkerIcon(true));
                     }
                 }
 
@@ -643,9 +632,6 @@ function cameraMap() {
                 let url = '/api/cameras/';
                 const params = new URLSearchParams();
 
-                if (this.filters.facialRecognition) {
-                    params.append('facial_recognition', 'true');
-                }
                 if (this.filters.noPictures) {
                     params.append('no_photos', 'true');
                 }
@@ -690,7 +676,7 @@ function cameraMap() {
                 const isSelected = this.selectedCamera?.id === camera.id;
 
                 // Create custom icon
-                const icon = createMarkerIcon(props.facial_recognition, isSelected);
+                const icon = createMarkerIcon(isSelected);
 
                 const marker = L.marker([coords[1], coords[0]], { icon: icon });
 
@@ -710,7 +696,6 @@ function cameraMap() {
         },
 
         resetFilters() {
-            this.filters.facialRecognition = false;
             this.filters.noPictures = false;
             this.loadCameras();
         },

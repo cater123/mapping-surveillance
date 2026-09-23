@@ -34,7 +34,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="max-w-2xl mx-auto px-4 py-10">
+<div class="max-w-2xl lg:max-w-3xl mx-auto px-4 py-10">
     <div class="mb-6">
         <h1 class="text-2xl font-bold text-gray-900 mb-1">Report a Surveillance Camera</h1>
         <p class="text-gray-600">
@@ -62,24 +62,10 @@
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Camera Location <span class="text-red-500">*</span>
                     </label>
-                    <div class="flex items-center gap-3 mb-2">
-                        <p class="text-sm text-gray-500"
-                           x-text="latitude
-                               ? 'Location set — drag the marker to adjust.'
-                               : 'Click the map to set the camera location'"></p>
-                        <button type="button"
-                                @click="useMyLocation()"
-                                :disabled="locating"
-                                class="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-lg border border-mit-red text-mit-red hover:bg-mit-red-light transition disabled:opacity-50 disabled:cursor-not-allowed shrink-0">
-                            <svg class="w-4 h-4" :class="{ 'animate-spin': locating }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                            <span x-text="locating ? 'Detecting...' : 'Detect where I am'"></span>
-                        </button>
-                    </div>
+                    <p class="text-sm text-gray-500 mb-2"
+                       x-text="latitude
+                           ? 'Location set — drag the marker to adjust.'
+                           : 'Click the map to set the camera location'"></p>
                     <p x-show="locationError" x-text="locationError" class="text-sm text-red-500 mb-2"></p>
                     <div id="location-map" class="border border-gray-200"></div>
                     <input type="hidden" name="latitude" x-model="latitude" id="id_latitude">
@@ -93,21 +79,6 @@
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                    <!-- Street Corner -->
-                    <div>
-                        <label for="id_cross_road" class="block text-sm font-medium text-gray-700 mb-2">
-                            Street Corner <span class="text-gray-400">(optional)</span>
-                        </label>
-                        <input type="text"
-                               name="cross_road"
-                               id="id_cross_road"
-                               class="form-input"
-                               placeholder="e.g., Massachusetts Ave & Amherst St">
-                        {% if form.cross_road.errors %}
-                        <p class="text-sm text-red-500 mt-1">{{ form.cross_road.errors.0 }}</p>
-                        {% endif %}
-                    </div>
-
                     <!-- Building -->
                     <div>
                         <label for="id_building" class="block text-sm font-medium text-gray-700 mb-2">
@@ -117,7 +88,7 @@
                                name="building"
                                id="id_building"
                                class="form-input"
-                               placeholder="e.g., Building 32 (Stata Center)">
+                               placeholder="e.g., Building 32">
                     </div>
 
                     <!-- Floor -->
@@ -129,7 +100,7 @@
                                name="floor"
                                id="id_floor"
                                class="form-input"
-                               placeholder="e.g., 3rd floor">
+                               placeholder="e.g., 3rd">
                     </div>
 
                     <!-- Nearby Room -->
@@ -141,7 +112,19 @@
                                name="nearby_room"
                                id="id_nearby_room"
                                class="form-input"
-                               placeholder="e.g., Room 204, near the elevator">
+                               placeholder="e.g., Room 204">
+                    </div>
+
+                    <!-- Indoor / Outdoor -->
+                    <div>
+                        <label for="id_placement" class="block text-sm font-medium text-gray-700 mb-2">
+                            Indoor or Outdoor <span class="text-gray-400">(optional)</span>
+                        </label>
+                        <select name="placement" id="id_placement" class="form-input">
+                            <option value="">Not sure</option>
+                            <option value="indoor">Indoor</option>
+                            <option value="outdoor">Outdoor</option>
+                        </select>
                     </div>
                 </div>
             </div>
